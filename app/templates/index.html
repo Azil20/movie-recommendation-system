@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMatch AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --red: #E50914;
+            --red-dim: #8B0000;
+            --gold: #F5C518;
+            --bg: #080808;
+            --surface: #111111;
+            --surface2: #181818;
+            --border: rgba(255,255,255,0.07);
+            --text: #F0F0F0;
+            --muted: #666;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Grain overlay */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 9999; opacity: 0.4;
+        }
+
+        /* Hero gradient backdrop */
+        .hero-bg {
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(229,9,20,0.18) 0%, transparent 60%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* Floating film strip decorations */
+        .strip {
+            position: fixed;
+            width: 3px;
+            background: repeating-linear-gradient(to bottom, transparent 0px, transparent 30px, rgba(229,9,20,0.15) 30px, rgba(229,9,20,0.15) 34px);
+            top: 0; bottom: 0;
+            pointer-events: none;
+        }
+        .strip-left { left: 24px; }
+        .strip-right { right: 24px; }
+
+        /* Layout */
+        .wrapper {
+            position: relative; z-index: 1;
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 60px 24px 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Header */
+        .logo-area {
+            text-align: center;
+            margin-bottom: 48px;
+            animation: fadeDown 0.7s ease both;
+        }
+
+        .logo-eyebrow {
+            font-size: 11px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--red);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(60px, 10vw, 96px);
+            line-height: 0.9;
+            letter-spacing: 0.04em;
+            background: linear-gradient(135deg, #fff 30%, #aaa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo span {
+            background: linear-gradient(135deg, var(--red) 0%, #ff6b6b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            margin-top: 14px;
+            font-size: 15px;
+            color: var(--muted);
+            font-weight: 300;
+            font-style: italic;
+        }
+
+        .tagline b { color: rgba(245,197,24,0.9); font-style: normal; font-weight: 400; }
+
+        /* Nav link */
+        .nav-link {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--muted);
+            text-decoration: none;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-bottom: 1px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .nav-link:hover { color: var(--red); border-color: var(--red); }
+
+        /* Search */
+        .search-form {
+            width: 100%;
+            max-width: 620px;
+            margin-bottom: 16px;
+            animation: fadeUp 0.7s 0.15s ease both;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+
+        .search-box:focus-within {
+            border-color: rgba(229,9,20,0.6);
+            box-shadow: 0 0 0 3px rgba(229,9,20,0.08), 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .search-icon {
+            padding: 0 16px;
+            color: var(--muted);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 300;
+            padding: 18px 0;
+            caret-color: var(--red);
+        }
+
+        .search-input::placeholder { color: #444; }
+
+        .search-btn {
+            background: var(--red);
+            border: none;
+            color: white;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 17px;
+            letter-spacing: 0.1em;
+            padding: 0 28px;
+            height: 100%;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            min-height: 58px;
+            white-space: nowrap;
+        }
+        .search-btn:hover { background: #c0060f; }
+        .search-btn:active { transform: scale(0.97); }
+
+        /* Chips */
+        .chips {
+            display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+            animation: fadeUp 0.7s 0.25s ease both;
+        }
+        .chip {
+            font-size: 12px;
+            color: var(--muted);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 2px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.04em;
+            background: transparent;
+        }
+        .chip:hover { color: var(--gold); border-color: rgba(245,197,24,0.35); background: rgba(245,197,24,0.05); }
+
+        /* Divider */
+        .divider {
+            width: 100%;
+            max-width: 620px;
+            height: 1px;
+            background: var(--border);
+            margin: 40px 0;
+        }
+
+        /* Error */
+        .error {
+            background: rgba(229,9,20,0.1);
+            border: 1px solid rgba(229,9,20,0.3);
+            color: #ff6b6b;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%; max-width: 620px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* Results header */
+        .results-header {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .result-badge {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #000;
+            background: var(--gold);
+            padding: 4px 10px;
+            border-radius: 2px;
+        }
+
+        .result-label {
+            font-size: 13px;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* Movie cards */
+        .results-list {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .movie-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 20px 28px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 20px;
+            transition: background 0.2s, border-color 0.2s, transform 0.2s;
+            cursor: default;
+            animation: fadeUp 0.4s ease both;
+        }
+
+        .movie-score {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 18px;
+            color: #00D26A;
+            background: rgba(0, 210, 106, 0.1);
+            border: 1px solid rgba(0, 210, 106, 0.2);
+            padding: 4px 10px;
+            border-radius: 2px;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .movie-card:hover {
+            background: var(--surface2);
+            border-color: rgba(229,9,20,0.25);
+            transform: translateX(4px);
+        }
+
+        .movie-rank {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            color: rgba(255,255,255,0.08);
+            width: 32px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .movie-card:hover .movie-rank { color: rgba(229,9,20,0.3); }
+
+        .movie-info { min-width: 0; }
+
+        .movie-title {
+            font-size: 17px;
+            font-weight: 500;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+        }
+
+        .movie-genres {
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+        }
+
+        .movie-genres span {
+            color: rgba(229,9,20,0.8);
+            font-weight: 500;
+            margin-right: 2px;
+        }
+
+        .movie-year-badge {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 15px;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Animations */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stagger cards */
+        .movie-card:nth-child(1) { animation-delay: 0.05s }
+        .movie-card:nth-child(2) { animation-delay: 0.1s }
+        .movie-card:nth-child(3) { animation-delay: 0.15s }
+        .movie-card:nth-child(4) { animation-delay: 0.2s }
+        .movie-card:nth-child(5) { animation-delay: 0.25s }
+        .movie-card:nth-child(6) { animation-delay: 0.3s }
+        .movie-card:nth-child(7) { animation-delay: 0.35s }
+        .movie-card:nth-child(8) { animation-delay: 0.4s }
+        .movie-card:nth-child(9) { animation-delay: 0.45s }
+        .movie-card:nth-child(10) { animation-delay: 0.5s }
+
+        @media (max-width: 580px) {
+            .strip { display: none; }
+            .movie-card { grid-template-columns: auto 1fr; }
+            .movie-year-badge { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero-bg"></div>
+<div class="strip strip-left"></div>
+<div class="strip strip-right"></div>
+
+<div class="wrapper">
+
+    <div class="logo-area">
+        <p class="logo-eyebrow">Moteur de recommandation</p>
+        <h1 class="logo">Cine<span>Match</span> AI</h1>
+        <p class="tagline">Entrez un film comme <b>The Matrix</b> ou des goûts comme <b>Action, Sci-Fi</b></p>
+        <a href="/stats" class="nav-link">Voir les stats & l'architecture →</a>
+    </div>
+
+    <form method="POST" action="/" class="search-form">
+        <div class="search-box">
+            <div class="search-icon">🎬</div>
+            <input
+                class="search-input"
+                type="text"
+                name="user_input"
+                placeholder="Que voulez-vous regarder ce soir ?"
+                value="{{ request.form.get('user_input', '') }}"
+                required
+                autocomplete="off"
+            >
+            <button class="search-btn" type="submit">Trouver</button>
+        </div>
+    </form>
+
+    <div class="chips">
+        <span class="chip" onclick="document.querySelector('.search-input').value='Inception'">Inception</span>
+        <span class="chip" onclick="document.querySelector('.search-input').value='Action, Thriller'">Action · Thriller</span>
+        <span class="chip" onclick="document.querySelector('.search-input').value='The Dark Knight'">The Dark Knight</span>
+        <span class="chip" onclick="document.querySelector('.search-input').value='Comédie romantique'">Comédie romantique</span>
+        <span class="chip" onclick="document.querySelector('.search-input').value='Sci-Fi'">Sci-Fi</span>
+    </div>
+
+    {% if error %}
+        <div class="divider"></div>
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if recommendations %}
+        <div class="divider"></div>
+
+        <div class="results-header">
+            <span class="result-badge">Résultat</span>
+            <span class="result-label">{{ search_type }}</span>
+        </div>
+
+        <div class="results-list">
+            {% for movie in recommendations %}
+            <div class="movie-card">
+                <div class="movie-rank">{{ loop.index }}</div>
+                <div class="movie-info">
+                    <div class="movie-title">{{ movie.title }}</div>
+                    <div class="movie-genres"><span>▸</span>{{ movie.genres }}</div>
+                </div>
+                
+                {% if movie.match_score and movie.match_score != "N/A" %}
+                    <div class="movie-score">{{ movie.match_score }}% Match</div>
+                {% endif %}
+                
+                <div class="movie-year-badge">{{ movie.year }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

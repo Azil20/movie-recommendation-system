@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture & Stats | CineMatch AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --red: #E50914;
+            --gold: #F5C518;
+            --green: #00D26A;
+            --bg: #080808;
+            --surface: #111111;
+            --surface2: #161616;
+            --border: rgba(255,255,255,0.07);
+            --text: #F0F0F0;
+            --muted: #555;
+            --mono: 'DM Mono', monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Grain */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 9999; opacity: 0.4;
+        }
+
+        /* Topbar */
+        .topbar {
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(8,8,8,0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .topbar-logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: 0.06em;
+        }
+        .topbar-logo span { color: var(--red); }
+
+        .topbar-nav {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .topbar-pill {
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 6px 14px;
+            border-radius: 2px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+        .topbar-back {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-decoration: none;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .topbar-back:hover { color: white; border-color: rgba(255,255,255,0.25); }
+
+        /* Page layout */
+        .page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 60px 40px 80px;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        /* Page title */
+        .page-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(42px, 6vw, 72px);
+            letter-spacing: 0.04em;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .page-title span { color: var(--red); }
+
+        .page-sub {
+            font-size: 14px;
+            color: var(--muted);
+            font-weight: 300;
+            margin-bottom: 56px;
+            font-style: italic;
+        }
+
+        /* Stat cards */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 28px 24px;
+            transition: background 0.2s;
+        }
+        .stat-card:hover { background: var(--surface2); }
+
+        .stat-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--red);
+            display: inline-block;
+        }
+
+        .stat-value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 48px;
+            letter-spacing: 0.04em;
+            line-height: 1;
+            color: #fff;
+        }
+
+        .stat-card.gold .stat-dot { background: var(--gold); }
+        .stat-card.gold .stat-value { color: var(--gold); }
+        .stat-card.green .stat-dot { background: var(--green); }
+        .stat-card.green .stat-value { font-size: 28px; color: var(--green); margin-top: 6px; }
+
+        /* Section */
+        .section {
+            margin-top: 40px;
+        }
+
+        .section-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Pipeline */
+        .pipeline {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .pipeline-step {
+            display: grid;
+            grid-template-columns: 48px 1fr auto;
+            align-items: center;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .pipeline-step:last-child { border-bottom: none; }
+        .pipeline-step:hover { background: var(--surface2); }
+
+        .step-num {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 64px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 18px;
+            color: rgba(255,255,255,0.12);
+            border-right: 1px solid var(--border);
+        }
+
+        .step-body {
+            padding: 16px 20px;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+
+        .step-desc {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        .step-tag {
+            margin-right: 20px;
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 2px;
+            white-space: nowrap;
+        }
+
+        .tag-red { background: rgba(229,9,20,0.15); color: var(--red); border: 1px solid rgba(229,9,20,0.25); }
+        .tag-gold { background: rgba(245,197,24,0.1); color: var(--gold); border: 1px solid rgba(245,197,24,0.2); }
+        .tag-blue { background: rgba(100,150,255,0.1); color: #7eb3ff; border: 1px solid rgba(100,150,255,0.2); }
+        .tag-green { background: rgba(0,210,106,0.1); color: var(--green); border: 1px solid rgba(0,210,106,0.2); }
+        .tag-gray { background: rgba(255,255,255,0.05); color: #888; border: 1px solid var(--border); }
+
+        /* Insight block */
+        .insight {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--gold);
+            padding: 20px 24px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            margin-top: 2px;
+        }
+
+        .insight-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .insight-text {
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+        .insight-text strong { color: var(--gold); font-weight: 500; }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .stat-row { grid-template-columns: 1fr 1fr; }
+            .page { padding: 40px 20px; }
+            .topbar { padding: 0 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="topbar">
+    <div class="topbar-logo">Cine<span>Match</span></div>
+    <div class="topbar-nav">
+        <div class="topbar-pill">Rapport système</div>
+        <a href="/" class="topbar-back">← Retour</a>
+    </div>
+</nav>
+
+<div class="page">
+
+    <h1 class="page-title">Stats &amp; <span>Architecture</span></h1>
+    <p class="page-sub">Analyse du dataset · Pipeline IA · Métriques de performance</p>
+
+    <div class="stat-row">
+        <div class="stat-card">
+            <div class="stat-label"><span class="stat-dot"></span>Films analysés</div>
+            <div class="stat-value">{{ stats.total }}</div>
+        </div>
+        <div class="stat-card gold">
+            <div class="stat-label"><span class="stat-dot"></span>Année moyenne</div>
+            <div class="stat-value">{{ stats.avg_year }}</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label"><span class="stat-dot"></span>Algorithme</div>
+            <div class="stat-value">{{ stats.algorithm }}</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <p class="section-label">Pipeline technologique</p>
+
+        <div class="pipeline">
+            <div class="pipeline-step">
+                <div class="step-num">01</div>
+                <div class="step-body">
+                    <div class="step-title">Génération de Candidats (NLP)</div>
+                    <div class="step-desc">Vectorisation TF-IDF et Similarité Cosinus sur les métadonnées (Content-Based)</div>
+                </div>
+                <span class="step-tag tag-blue">Scikit-Learn</span>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">02</div>
+                <div class="step-body">
+                    <div class="step-title">Filtrage Collaboratif</div>
+                    <div class="step-desc">Analyse des notes utilisateurs via Factorisation de Matrices (Algorithme SVD)</div>
+                </div>
+                <span class="step-tag tag-gold">Surprise</span>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">03</div>
+                <div class="step-body">
+                    <div class="step-title">Hybridation & Re-ranking</div>
+                    <div class="step-desc">Le modèle prédit la note de l'utilisateur pour le Top 50 du NLP et réordonne la liste</div>
+                </div>
+                <span class="step-tag tag-red">Math</span>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">04</div>
+                <div class="step-body">
+                    <div class="step-title">API REST & Interface Web</div>
+                    <div class="step-desc">Serveur Flask exposant le modèle pour des prédictions en temps réel</div>
+                </div>
+                <span class="step-tag tag-green">Flask</span>
+            </div>
+        </div>
+
+        <div class="insight">
+            <div class="insight-icon">💡</div>
+            <p class="insight-text">
+                Ce système de <strong>Niveau Master 1</strong> utilise une approche hybride en deux étapes. 
+                D'abord, le NLP trouve 50 films thématiquement similaires. Ensuite, l'algorithme <strong>SVD (Singular Value Decomposition)</strong> prend le relais en analysant l'historique des notes de l'utilisateur pour prédire un score de compatibilité personnalisé et réordonner les résultats.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
